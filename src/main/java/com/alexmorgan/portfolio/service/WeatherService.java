@@ -13,13 +13,14 @@ public class WeatherService {
 
     private final RestClient restClient = RestClient.create();
 
-    public WeatherData getWeather(String cityName) {
-        GeocodingResponse.Result location = geocode(cityName);
+    public WeatherData getWeather(String cityName, String countryCode) {
+        GeocodingResponse.Result location = geocode(cityName, countryCode);
         WeatherApiResponse.CurrentWeather current = fetchCurrent(location.getLatitude(), location.getLongitude());
 
         int code = current.getWeatherCode();
         return WeatherData.builder()
                 .cityName(location.getName())
+                .region(location.getAdmin1())
                 .country(location.getCountry())
                 .latitude(location.getLatitude())
                 .longitude(location.getLongitude())
@@ -34,15 +35,27 @@ public class WeatherService {
                 .build();
     }
 
-    private GeocodingResponse.Result geocode(String city) {
-        log.info("Geocoding city: {}", city);
+    private GeocodingResponse.Result geocode(String city, String countryCode) {
+        boolean filtered = countryCode != null && !countryCode.isBlank();
+        int count = filtered ? 10 : 1;
+        log.info("Geocoding city={} countryCode={}", city, countryCode);
+
         GeocodingResponse response = restClient.get()
-                .uri("https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&language=en&format=json", city)
+                .uri("https://geocoding-api.open-meteo.com/v1/search?name={city}&count={count}&language=en&format=json",
+                     city, count)
                 .retrieve()
                 .body(GeocodingResponse.class);
 
         if (response == null || response.getResults() == null || response.getResults().isEmpty()) {
-            throw new IllegalArgumentException("City not found: " + city);
+            throw new IllegalArgumentException("City \"" + city + "\" not found.");
+        }
+
+        if (filtered) {
+            return response.getResults().stream()
+                    .filter(r -> countryCode.equalsIgnoreCase(r.getCountryCode()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "\"" + city + "\" not found in the selected country."));
         }
         return response.getResults().get(0);
     }

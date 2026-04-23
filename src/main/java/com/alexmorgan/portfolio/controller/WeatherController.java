@@ -25,10 +25,12 @@ public class WeatherController {
 
     @GetMapping("/")
     public String index(@RequestParam(required = false) String city,
+                        @RequestParam(required = false) String countryCode,
                         Model model,
                         @AuthenticationPrincipal OAuth2User principal) {
         String cityToLoad = (city != null && !city.isBlank()) ? city : "London";
-        loadWeather(cityToLoad, model);
+        loadWeather(cityToLoad, countryCode, model);
+        model.addAttribute("selectedCountry", countryCode != null ? countryCode : "");
         loadUser(model, principal);
         return "index";
     }
@@ -76,13 +78,13 @@ public class WeatherController {
         return redirect;
     }
 
-    private void loadWeather(String city, Model model) {
+    private void loadWeather(String city, String countryCode, Model model) {
         try {
-            model.addAttribute("weather", weatherService.getWeather(city));
+            model.addAttribute("weather", weatherService.getWeather(city, countryCode));
         } catch (IllegalArgumentException e) {
-            model.addAttribute("weatherError", "City \"" + city + "\" not found. Try a different name.");
+            model.addAttribute("weatherError", e.getMessage());
         } catch (Exception e) {
-            log.error("Weather API error for {}", city, e);
+            log.error("Weather API error for city={} country={}", city, countryCode, e);
             model.addAttribute("weatherError", "Weather data unavailable. Please try again shortly.");
         }
     }

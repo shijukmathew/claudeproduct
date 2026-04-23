@@ -1,6 +1,7 @@
 package com.alexmorgan.portfolio.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
@@ -16,6 +17,9 @@ public class GeocodingResponse {
     public static class Result {
         private String name;
         private String country;
+        private String admin1;
+        @JsonProperty("country_code")
+        private String countryCode;
         private double latitude;
         private double longitude;
     }

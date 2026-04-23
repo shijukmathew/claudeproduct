@@ -7,6 +7,7 @@ import lombok.Data;
 @Builder
 public class WeatherData {
     private String cityName;
+    private String region;     // admin1 — state/province for disambiguation
     private String country;
     private double latitude;
     private double longitude;
