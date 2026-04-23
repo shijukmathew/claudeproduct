@@ -1,0 +1,19 @@
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+.idea/
+*.iml
+*.iws
+.project
+.classpath
+.settings/
+*.launch
+
+.env
+*.env.local
+
+application - Copy.properties
