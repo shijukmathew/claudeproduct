@@ -1,144 +1,277 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Product Manager</title>
+  <title>WeatherApp</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
   <style>
-    body { background-color: #f0f4f8; }
-    .hero { background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); }
-    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-    .btn-delete { transition: transform .1s; }
-    .btn-delete:hover { transform: scale(1.1); }
-    .badge-db { font-size: .75rem; }
-    .table-hover tbody tr:hover { background-color: #eef2ff; }
-    .product-number { font-family: monospace; font-size: .9rem; color: #6366f1; }
-    #addProductCollapse .card { border-top: 3px solid #2563eb; }
+    html, body { height: 100%; margin: 0; }
+
+    /* ── Dynamic weather backgrounds ─────────────────────────── */
+    .bg-clear  { background: linear-gradient(160deg, #0093E9 0%, #80D0C7 100%); }
+    .bg-cloudy { background: linear-gradient(160deg, #4b6cb7 0%, #182848 100%); }
+    .bg-fog    { background: linear-gradient(160deg, #8e9eab 0%, #cfd9df 100%); }
+    .bg-rain   { background: linear-gradient(160deg, #1c1c2e 0%, #2d5a8e 100%); }
+    .bg-snow   { background: linear-gradient(160deg, #83a4d4 0%, #dce8f5 100%); }
+    .bg-storm  { background: linear-gradient(160deg, #0f0c29 0%, #302b63 100%); }
+    .bg-default{ background: linear-gradient(160deg, #1e3a5f 0%, #2563eb 100%); }
+
+    .page-wrap { min-height: 100vh; transition: background 0.6s ease; }
+
+    /* ── Header ───────────────────────────────────────────────── */
+    .top-bar { backdrop-filter: blur(6px); background: rgba(0,0,0,.18); }
+
+    /* ── Search box ───────────────────────────────────────────── */
+    .search-input {
+      background: rgba(255,255,255,.2);
+      border: 1.5px solid rgba(255,255,255,.5);
+      color: white;
+      border-radius: 50px;
+      padding: .6rem 1.4rem;
+      font-size: 1.05rem;
+      width: 380px;
+      max-width: 90vw;
+    }
+    .search-input::placeholder { color: rgba(255,255,255,.7); }
+    .search-input:focus {
+      outline: none;
+      background: rgba(255,255,255,.3);
+      border-color: white;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.25);
+      color: white;
+    }
+    .search-btn {
+      border-radius: 50px;
+      padding: .6rem 1.6rem;
+      background: rgba(255,255,255,.25);
+      border: 1.5px solid rgba(255,255,255,.5);
+      color: white;
+      font-weight: 600;
+      transition: background .2s;
+    }
+    .search-btn:hover { background: rgba(255,255,255,.4); color: white; }
+
+    /* ── Weather card ─────────────────────────────────────────── */
+    .weather-card {
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 24px;
+    }
+    .weather-icon { font-size: 5rem; line-height: 1; }
+    .temp-display { font-size: 5.5rem; font-weight: 700; line-height: 1; }
+
+    /* ── Saved city chips ─────────────────────────────────────── */
+    .city-chip {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 50px;
+      backdrop-filter: blur(8px);
+      transition: background .2s, transform .1s;
+    }
+    .city-chip:hover { background: rgba(255,255,255,.28); transform: translateY(-1px); }
+    .chip-delete {
+      background: rgba(255,255,255,.15);
+      border: none;
+      color: inherit;
+      border-radius: 50%;
+      width: 22px; height: 22px;
+      line-height: 1;
+      padding: 0;
+      font-size: .75rem;
+      transition: background .15s;
+    }
+    .chip-delete:hover { background: rgba(255,0,0,.35); }
+
+    /* ── Login button ─────────────────────────────────────────── */
+    .github-btn {
+      background: rgba(255,255,255,.15);
+      border: 1.5px solid rgba(255,255,255,.5);
+      color: white;
+      border-radius: 50px;
+      padding: .4rem 1.1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .2s;
+    }
+    .github-btn:hover { background: rgba(255,255,255,.28); color: white; }
   </style>
 </head>
 <body>
 
-<!-- ── Hero Header ─────────────────────────────────────────────────── -->
-<div class="hero text-white py-4 px-4 mb-4">
-  <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div>
-      <h1 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Hello! Welcome to Product Manager</h1>
-      <p class="mb-0 opacity-75 mt-1">Containerized Spring Boot · PostgreSQL · Docker</p>
-    </div>
-    <!-- DB connection badge -->
-    <span class="badge bg-success badge-db px-3 py-2 rounded-pill">
-      <i class="bi bi-database-check me-1"></i>DB Connected
+<div th:class="'page-wrap ' + ${weather != null ? weather.backgroundClass : 'bg-default'}"
+     class="page-wrap bg-default">
+
+  <!-- ── Top bar ─────────────────────────────────────────────────── -->
+  <div class="top-bar py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+    <span class="text-white fw-bold fs-5">
+      <i class="bi bi-cloud-sun-fill me-2"></i>WeatherApp
     </span>
-  </div>
-</div>
 
-<div class="container pb-5">
-
-  <!-- ── Flash Messages ─────────────────────────────────────────────── -->
-  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="bi bi-check-circle-fill me-2"></i>
-    <span th:text="${successMessage}"></span>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
-  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    <span th:text="${errorMessage}"></span>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
-
-  <!-- ── Add Product Toggle ──────────────────────────────────────────── -->
-  <div class="mb-3">
-    <button class="btn btn-primary"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#addProductCollapse"
-            th:classappend="${showForm} ? '' : 'collapsed'"
-            aria-expanded="false">
-      <i class="bi bi-plus-circle me-2"></i>Add New Product
-    </button>
-  </div>
-
-  <!-- ── Add Product Form (collapsible dropdown) ────────────────────── -->
-  <div class="collapse mb-4" id="addProductCollapse" th:classappend="${showForm} ? 'show' : ''">
-    <div class="card p-4">
-      <h5 class="fw-semibold mb-3"><i class="bi bi-pencil-square me-2 text-primary"></i>Product Details</h5>
-      <form th:action="@{/products/add}" th:object="${newProduct}" method="post">
-        <div class="row g-3">
-          <div class="col-md-5">
-            <label for="productName" class="form-label fw-medium">Product Name</label>
-            <input type="text" class="form-control" id="productName"
-                   th:field="*{productName}"
-                   th:classappend="${#fields.hasErrors('productName')} ? 'is-invalid'"
-                   placeholder="e.g. Wireless Keyboard"/>
-            <div class="invalid-feedback" th:errors="*{productName}"></div>
-          </div>
-          <div class="col-md-4">
-            <label for="productNumber" class="form-label fw-medium">Product Number</label>
-            <input type="text" class="form-control" id="productNumber"
-                   th:field="*{productNumber}"
-                   th:classappend="${#fields.hasErrors('productNumber')} ? 'is-invalid'"
-                   placeholder="e.g. WK-2024-001"/>
-            <div class="invalid-feedback" th:errors="*{productNumber}"></div>
-          </div>
-          <div class="col-md-3 d-flex align-items-end">
-            <button type="submit" class="btn btn-success w-100">
-              <i class="bi bi-floppy me-2"></i>Save Product
-            </button>
-          </div>
-        </div>
+    <!-- Logged in -->
+    <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-2">
+      <img th:src="${avatarUrl}" alt="avatar"
+           class="rounded-circle" width="32" height="32"
+           style="border:2px solid rgba(255,255,255,.6)"/>
+      <span class="text-white fw-medium small" th:text="${username}"></span>
+      <form th:action="@{/logout}" method="post" class="mb-0">
+        <button class="github-btn btn btn-sm">
+          <i class="bi bi-box-arrow-right me-1"></i>Logout
+        </button>
       </form>
     </div>
+
+    <!-- Not logged in -->
+    <div sec:authorize="!isAuthenticated()">
+      <a href="/oauth2/authorization/github" class="github-btn">
+        <i class="bi bi-github me-2"></i>Login with GitHub
+      </a>
+    </div>
+
   </div>
 
-  <!-- ── Products Table ─────────────────────────────────────────────── -->
-  <div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 px-4">
-      <h5 class="mb-0 fw-semibold"><i class="bi bi-table me-2 text-primary"></i>Products</h5>
-      <span class="badge bg-primary rounded-pill" th:text="${#lists.size(products)} + ' items'"></span>
+  <div class="container py-4"
+       th:class="${weather != null ? weather.textClass : 'text-white'} + ' container py-4'"
+       class="container py-4 text-white">
+
+    <!-- ── Flash messages ───────────────────────────────────────── -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+      <i class="bi bi-check-circle-fill me-2"></i><span th:text="${success}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${info}" class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+      <i class="bi bi-info-circle-fill me-2"></i><span th:text="${info}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- Empty state -->
-    <div th:if="${#lists.isEmpty(products)}" class="text-center py-5 text-muted">
-      <i class="bi bi-inbox display-4 d-block mb-2"></i>
-      <p>No products yet. Click <strong>Add New Product</strong> to get started.</p>
+    <!-- ── Search bar ────────────────────────────────────────────── -->
+    <div class="d-flex justify-content-center gap-2 mb-5 flex-wrap">
+      <form action="/" method="get" class="d-flex gap-2 flex-wrap justify-content-center">
+        <input type="text" name="city" class="search-input"
+               placeholder="Search for a city..."
+               th:value="${weather != null ? weather.cityName : ''}"
+               autocomplete="off"/>
+        <button type="submit" class="search-btn btn">
+          <i class="bi bi-search me-1"></i>Search
+        </button>
+      </form>
     </div>
 
-    <!-- Table -->
-    <div th:unless="${#lists.isEmpty(products)}" class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th class="ps-4" style="width:60px">#</th>
-            <th>Product Name</th>
-            <th>Product Number</th>
-            <th>Added On</th>
-            <th class="text-center" style="width:110px">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="product, stat : ${products}">
-            <td class="ps-4 text-muted" th:text="${stat.index + 1}"></td>
-            <td class="fw-medium" th:text="${product.productName}"></td>
-            <td><span class="product-number" th:text="${product.productNumber}"></span></td>
-            <td class="text-muted small"
-                th:text="${#temporals.format(product.createdAt, 'dd MMM yyyy HH:mm')}"></td>
-            <td class="text-center">
-              <form th:action="@{/products/delete/{id}(id=${product.id})}" method="post"
-                    onsubmit="return confirm('Delete this product?')">
-                <button type="submit" class="btn btn-sm btn-outline-danger btn-delete" title="Delete">
-                  <i class="bi bi-trash3"></i> Delete
-                </button>
-              </form>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- ── Weather error ─────────────────────────────────────────── -->
+    <div th:if="${weatherError}" class="text-center py-5">
+      <i class="bi bi-exclamation-circle display-4 d-block mb-3 opacity-75"></i>
+      <p class="fs-5" th:text="${weatherError}"></p>
     </div>
-  </div>
 
-</div>
+    <!-- ── Main weather card ─────────────────────────────────────── -->
+    <div th:if="${weather}" class="weather-card p-4 p-md-5 mx-auto mb-5" style="max-width:560px;">
+
+      <!-- City & country -->
+      <div class="text-center mb-3">
+        <h2 class="fw-bold mb-0">
+          <i class="bi bi-geo-alt-fill me-1 opacity-75"></i>
+          <span th:text="${weather.cityName}"></span>
+        </h2>
+        <p class="opacity-75 mb-0" th:text="${weather.country}"></p>
+      </div>
+
+      <!-- Icon + temperature -->
+      <div class="text-center my-4">
+        <div class="weather-icon mb-2">
+          <i th:class="'bi ' + ${weather.icon}"></i>
+        </div>
+        <div class="temp-display" th:text="${weather.temperature} + '°C'"></div>
+        <p class="fs-4 mt-1 opacity-90" th:text="${weather.condition}"></p>
+      </div>
+
+      <!-- Stats row -->
+      <div class="d-flex justify-content-center gap-4 mb-4 flex-wrap">
+        <div class="text-center">
+          <div class="opacity-75 small mb-1"><i class="bi bi-wind me-1"></i>Wind</div>
+          <div class="fw-semibold" th:text="${weather.windSpeed} + ' km/h'"></div>
+        </div>
+        <div class="text-center">
+          <div class="opacity-75 small mb-1"><i class="bi bi-droplet-fill me-1"></i>Humidity</div>
+          <div class="fw-semibold" th:text="${weather.humidity} + '%'"></div>
+        </div>
+        <div class="text-center">
+          <div class="opacity-75 small mb-1"><i class="bi bi-broadcast-pin me-1"></i>Code</div>
+          <div class="fw-semibold" th:text="'WMO ' + ${weather.weatherCode}"></div>
+        </div>
+      </div>
+
+      <!-- Save to favourites (only when logged in) -->
+      <div sec:authorize="isAuthenticated()" class="text-center">
+        <form th:action="@{/cities/save}" method="post" class="d-inline">
+          <input type="hidden" name="cityName"  th:value="${weather.cityName}"/>
+          <input type="hidden" name="country"   th:value="${weather.country}"/>
+          <input type="hidden" name="latitude"  th:value="${weather.latitude}"/>
+          <input type="hidden" name="longitude" th:value="${weather.longitude}"/>
+          <button type="submit" class="search-btn btn">
+            <i class="bi bi-star-fill me-2"></i>Save to Favourites
+          </button>
+        </form>
+      </div>
+
+      <!-- Prompt to login to save -->
+      <div sec:authorize="!isAuthenticated()" class="text-center opacity-75 small">
+        <i class="bi bi-lock me-1"></i>
+        <a href="/oauth2/authorization/github" class="link-light">Login with GitHub</a>
+        to save favourite cities
+      </div>
+
+    </div>
+
+    <!-- ── Saved cities ───────────────────────────────────────────── -->
+    <div sec:authorize="isAuthenticated()">
+
+      <h5 class="fw-semibold mb-3 text-center opacity-90">
+        <i class="bi bi-star-fill me-2"></i>My Favourite Cities
+      </h5>
+
+      <!-- No saved cities yet -->
+      <div th:if="${#lists.isEmpty(savedCities)}" class="text-center opacity-60 small pb-4">
+        No favourites yet — search for a city and save it.
+      </div>
+
+      <!-- City chips -->
+      <div th:unless="${#lists.isEmpty(savedCities)}"
+           class="d-flex flex-wrap justify-content-center gap-2 pb-4">
+
+        <div th:each="city : ${savedCities}"
+             class="city-chip d-flex align-items-center gap-2 px-3 py-2">
+
+          <!-- Click chip → search that city -->
+          <form th:action="@{/}" method="get" class="mb-0">
+            <input type="hidden" name="city" th:value="${city.cityName}"/>
+            <button type="submit" class="btn btn-link p-0 text-inherit fw-medium"
+                    style="color:inherit; text-decoration:none;">
+              <i class="bi bi-geo-alt me-1 opacity-75"></i>
+              <span th:text="${city.cityName}"></span>
+              <span class="opacity-60 small ms-1" th:text="'· ' + ${city.country}"></span>
+            </button>
+          </form>
+
+          <!-- Delete chip -->
+          <form th:action="@{/cities/delete/{id}(id=${city.id})}" method="post" class="mb-0">
+            <input type="hidden" name="currentCity" th:value="${weather != null ? weather.cityName : ''}"/>
+            <button type="submit" class="chip-delete" title="Remove"
+                    onclick="return confirm('Remove this city?')">
+              <i class="bi bi-x"></i>
+            </button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /page-wrap -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

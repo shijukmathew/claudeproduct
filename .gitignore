@@ -17,3 +17,7 @@ target/
 *.env.local
 
 application - Copy.properties
+
+# Local notes / scratch files that may contain credentials
+how to.txt
+.claude/
