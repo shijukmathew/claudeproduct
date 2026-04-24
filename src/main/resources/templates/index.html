@@ -1,389 +1,239 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WeatherApp</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet"/>
-  <style>
-    html, body { height: 100%; margin: 0; }
-
-    /* ── Dynamic weather backgrounds (muted, easy on the eye) ── */
-    .bg-clear  { background: linear-gradient(160deg, #5b9bd5 0%, #89bdd3 100%); }
-    .bg-cloudy { background: linear-gradient(160deg, #607d8b 0%, #90a4ae 100%); }
-    .bg-fog    { background: linear-gradient(160deg, #9eacb4 0%, #c8d6df 100%); }
-    .bg-rain   { background: linear-gradient(160deg, #3a5068 0%, #546e7a 100%); }
-    .bg-snow   { background: linear-gradient(160deg, #90afc5 0%, #c9dde8 100%); }
-    .bg-storm  { background: linear-gradient(160deg, #2e3b47 0%, #455a64 100%); }
-    .bg-default{ background: linear-gradient(160deg, #3d6b99 0%, #5c8ab8 100%); }
-
-    .page-wrap { min-height: 100vh; transition: background 0.6s ease; }
-
-    /* ── Header ───────────────────────────────────────────────── */
-    .top-bar { backdrop-filter: blur(6px); background: rgba(0,0,0,.18); }
-
-    /* ── Search box ───────────────────────────────────────────── */
-    .search-input {
-      background: rgba(255,255,255,.2);
-      border: 1.5px solid rgba(255,255,255,.5);
-      color: white;
-      border-radius: 50px;
-      padding: .6rem 1.4rem;
-      font-size: 1.05rem;
-      width: 300px;
-      max-width: 90vw;
-    }
-    .search-input::placeholder { color: rgba(255,255,255,.7); }
-    .search-input:focus {
-      outline: none;
-      background: rgba(255,255,255,.3);
-      border-color: white;
-      box-shadow: 0 0 0 3px rgba(255,255,255,.25);
-      color: white;
-    }
-    /* ── Tom Select: glassmorphism overrides ─────────────────── */
-    .ts-wrapper { width: 220px; }
-    .ts-wrapper.single .ts-control,
-    .ts-wrapper.single.input-active .ts-control {
-      background: rgba(255,255,255,.2) !important;
-      border: 1.5px solid rgba(255,255,255,.5) !important;
-      border-radius: 50px !important;
-      box-shadow: none !important;
-      padding: .55rem 2.2rem .55rem 1.2rem !important;
-      cursor: pointer;
-    }
-    .ts-wrapper.single.focus .ts-control {
-      background: rgba(255,255,255,.3) !important;
-      border-color: white !important;
-      box-shadow: 0 0 0 3px rgba(255,255,255,.25) !important;
-    }
-    .ts-control .item,
-    .ts-control input { color: white !important; font-size: .95rem; }
-    .ts-control input::placeholder { color: rgba(255,255,255,.7) !important; }
-    .ts-wrapper .ts-control:after { border-top-color: rgba(255,255,255,.8) !important; }
-    .ts-dropdown {
-      background: rgba(38, 64, 88, .96) !important;
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,.2) !important;
-      border-radius: 14px !important;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-    .ts-dropdown .ts-option { color: rgba(255,255,255,.9) !important; padding: .55rem 1.1rem; }
-    .ts-dropdown .ts-option.active { background: rgba(255,255,255,.18) !important; color: white !important; }
-    .ts-dropdown .ts-option.selected { background: rgba(255,255,255,.1) !important; }
-    .ts-dropdown-content { max-height: 260px; }
-    /* Search input inside the dropdown */
-    .ts-dropdown .ts-dropdown-header input {
-      background: rgba(255,255,255,.1);
-      border: none;
-      border-bottom: 1px solid rgba(255,255,255,.2);
-      color: white;
-      padding: .5rem 1rem;
-    }
-    .search-btn {
-      border-radius: 50px;
-      padding: .6rem 1.6rem;
-      background: rgba(255,255,255,.25);
-      border: 1.5px solid rgba(255,255,255,.5);
-      color: white;
-      font-weight: 600;
-      transition: background .2s;
-    }
-    .search-btn:hover { background: rgba(255,255,255,.4); color: white; }
-
-    /* ── Weather card ─────────────────────────────────────────── */
-    .weather-card {
-      background: rgba(255,255,255,.15);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,.25);
-      border-radius: 24px;
-    }
-    .weather-icon { font-size: 5rem; line-height: 1; }
-    .temp-display { font-size: 5.5rem; font-weight: 700; line-height: 1; }
-
-    /* ── Saved city chips ─────────────────────────────────────── */
-    .city-chip {
-      background: rgba(255,255,255,.18);
-      border: 1px solid rgba(255,255,255,.35);
-      border-radius: 50px;
-      backdrop-filter: blur(8px);
-      transition: background .2s, transform .1s;
-    }
-    .city-chip:hover { background: rgba(255,255,255,.28); transform: translateY(-1px); }
-    .chip-delete {
-      background: rgba(255,255,255,.15);
-      border: none;
-      color: inherit;
-      border-radius: 50%;
-      width: 22px; height: 22px;
-      line-height: 1;
-      padding: 0;
-      font-size: .75rem;
-      transition: background .15s;
-    }
-    .chip-delete:hover { background: rgba(255,0,0,.35); }
-
-    /* ── Login button ─────────────────────────────────────────── */
-    .github-btn {
-      background: rgba(255,255,255,.15);
-      border: 1.5px solid rgba(255,255,255,.5);
-      color: white;
-      border-radius: 50px;
-      padding: .4rem 1.1rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background .2s;
-    }
-    .github-btn:hover { background: rgba(255,255,255,.28); color: white; }
-  </style>
+  <title th:text="${weather.cityName()} + ' · WeatherApp'">WeatherApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" th:href="@{/styles.css}"/>
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet"/>
 </head>
 <body>
 
-<div th:class="'page-wrap ' + ${weather != null ? weather.backgroundClass : 'bg-default'}">
+<div th:class="'page-shell sky-' + ${weather.backgroundClass().replace('bg-','')}">
 
-  <!-- ── Top bar ─────────────────────────────────────────────────── -->
-  <div class="top-bar py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <!-- Animated weather particles -->
+  <div class="particles" aria-hidden="true"></div>
 
-    <span class="text-white fw-bold fs-5">
-      <i class="bi bi-cloud-sun-fill me-2"></i>WeatherApp
-    </span>
+  <!-- ── Top navigation ──────────────────────────────────────── -->
+  <header class="appbar">
+    <a class="brand" href="/">
+      <span class="brand-icon">🌤</span>
+      WeatherApp
+    </a>
+    <nav class="nav-links">
+      <a class="nav-btn" href="#forecast">Forecast ↓</a>
+    </nav>
+  </header>
 
-    <!-- Logged in -->
-    <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-2">
-      <img th:src="${avatarUrl}" alt="avatar"
-           class="rounded-circle" width="32" height="32"
-           style="border:2px solid rgba(255,255,255,.6)"/>
-      <span class="text-white fw-medium small" th:text="${username}"></span>
-      <form th:action="@{/logout}" method="post" class="mb-0">
-        <button class="github-btn btn btn-sm">
-          <i class="bi bi-box-arrow-right me-1"></i>Logout
-        </button>
-      </form>
-    </div>
+  <!-- ── Stage ───────────────────────────────────────────────── -->
+  <section class="stage">
 
-    <!-- Not logged in -->
-    <div sec:authorize="!isAuthenticated()">
-      <a href="/oauth2/authorization/github" class="github-btn">
-        <i class="bi bi-github me-2"></i>Login with GitHub
-      </a>
-    </div>
-
-  </div>
-
-  <div th:class="${weather != null ? weather.textClass : 'text-white'} + ' container py-4'">
-
-    <!-- ── Flash messages ───────────────────────────────────────── -->
-    <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-      <i class="bi bi-check-circle-fill me-2"></i><span th:text="${success}"></span>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    <div th:if="${info}" class="alert alert-info alert-dismissible fade show mb-3" role="alert">
-      <i class="bi bi-info-circle-fill me-2"></i><span th:text="${info}"></span>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-
-    <!-- ── Search bar ────────────────────────────────────────────── -->
-    <div class="d-flex justify-content-center mb-5">
-      <form action="/" method="get" class="d-flex gap-2 flex-wrap justify-content-center align-items-center">
-
-        <input type="text" name="city" class="search-input"
-               placeholder="City name..."
-               th:value="${weather != null ? weather.cityName : ''}"
-               autocomplete="off" required/>
-
-        <select id="countryCode" name="countryCode">
-          <option value="">🌍 Any Country</option>
-          <option value="AU" th:selected="${selectedCountry == 'AU'}">🇦🇺 Australia</option>
-          <option value="AT" th:selected="${selectedCountry == 'AT'}">🇦🇹 Austria</option>
-          <option value="BD" th:selected="${selectedCountry == 'BD'}">🇧🇩 Bangladesh</option>
-          <option value="BE" th:selected="${selectedCountry == 'BE'}">🇧🇪 Belgium</option>
-          <option value="BR" th:selected="${selectedCountry == 'BR'}">🇧🇷 Brazil</option>
-          <option value="CA" th:selected="${selectedCountry == 'CA'}">🇨🇦 Canada</option>
-          <option value="CL" th:selected="${selectedCountry == 'CL'}">🇨🇱 Chile</option>
-          <option value="CN" th:selected="${selectedCountry == 'CN'}">🇨🇳 China</option>
-          <option value="CO" th:selected="${selectedCountry == 'CO'}">🇨🇴 Colombia</option>
-          <option value="HR" th:selected="${selectedCountry == 'HR'}">🇭🇷 Croatia</option>
-          <option value="CZ" th:selected="${selectedCountry == 'CZ'}">🇨🇿 Czech Republic</option>
-          <option value="DK" th:selected="${selectedCountry == 'DK'}">🇩🇰 Denmark</option>
-          <option value="EG" th:selected="${selectedCountry == 'EG'}">🇪🇬 Egypt</option>
-          <option value="FI" th:selected="${selectedCountry == 'FI'}">🇫🇮 Finland</option>
-          <option value="FR" th:selected="${selectedCountry == 'FR'}">🇫🇷 France</option>
-          <option value="DE" th:selected="${selectedCountry == 'DE'}">🇩🇪 Germany</option>
-          <option value="GH" th:selected="${selectedCountry == 'GH'}">🇬🇭 Ghana</option>
-          <option value="GR" th:selected="${selectedCountry == 'GR'}">🇬🇷 Greece</option>
-          <option value="HU" th:selected="${selectedCountry == 'HU'}">🇭🇺 Hungary</option>
-          <option value="IN" th:selected="${selectedCountry == 'IN'}">🇮🇳 India</option>
-          <option value="ID" th:selected="${selectedCountry == 'ID'}">🇮🇩 Indonesia</option>
-          <option value="IE" th:selected="${selectedCountry == 'IE'}">🇮🇪 Ireland</option>
-          <option value="IL" th:selected="${selectedCountry == 'IL'}">🇮🇱 Israel</option>
-          <option value="IT" th:selected="${selectedCountry == 'IT'}">🇮🇹 Italy</option>
-          <option value="JP" th:selected="${selectedCountry == 'JP'}">🇯🇵 Japan</option>
-          <option value="KE" th:selected="${selectedCountry == 'KE'}">🇰🇪 Kenya</option>
-          <option value="MY" th:selected="${selectedCountry == 'MY'}">🇲🇾 Malaysia</option>
-          <option value="MX" th:selected="${selectedCountry == 'MX'}">🇲🇽 Mexico</option>
-          <option value="MA" th:selected="${selectedCountry == 'MA'}">🇲🇦 Morocco</option>
-          <option value="NL" th:selected="${selectedCountry == 'NL'}">🇳🇱 Netherlands</option>
-          <option value="NZ" th:selected="${selectedCountry == 'NZ'}">🇳🇿 New Zealand</option>
-          <option value="NG" th:selected="${selectedCountry == 'NG'}">🇳🇬 Nigeria</option>
-          <option value="NO" th:selected="${selectedCountry == 'NO'}">🇳🇴 Norway</option>
-          <option value="PK" th:selected="${selectedCountry == 'PK'}">🇵🇰 Pakistan</option>
-          <option value="PE" th:selected="${selectedCountry == 'PE'}">🇵🇪 Peru</option>
-          <option value="PH" th:selected="${selectedCountry == 'PH'}">🇵🇭 Philippines</option>
-          <option value="PL" th:selected="${selectedCountry == 'PL'}">🇵🇱 Poland</option>
-          <option value="PT" th:selected="${selectedCountry == 'PT'}">🇵🇹 Portugal</option>
-          <option value="RO" th:selected="${selectedCountry == 'RO'}">🇷🇴 Romania</option>
-          <option value="RU" th:selected="${selectedCountry == 'RU'}">🇷🇺 Russia</option>
-          <option value="SA" th:selected="${selectedCountry == 'SA'}">🇸🇦 Saudi Arabia</option>
-          <option value="SG" th:selected="${selectedCountry == 'SG'}">🇸🇬 Singapore</option>
-          <option value="ZA" th:selected="${selectedCountry == 'ZA'}">🇿🇦 South Africa</option>
-          <option value="KR" th:selected="${selectedCountry == 'KR'}">🇰🇷 South Korea</option>
-          <option value="ES" th:selected="${selectedCountry == 'ES'}">🇪🇸 Spain</option>
-          <option value="SE" th:selected="${selectedCountry == 'SE'}">🇸🇪 Sweden</option>
-          <option value="CH" th:selected="${selectedCountry == 'CH'}">🇨🇭 Switzerland</option>
-          <option value="TH" th:selected="${selectedCountry == 'TH'}">🇹🇭 Thailand</option>
-          <option value="TR" th:selected="${selectedCountry == 'TR'}">🇹🇷 Turkey</option>
-          <option value="UA" th:selected="${selectedCountry == 'UA'}">🇺🇦 Ukraine</option>
-          <option value="AE" th:selected="${selectedCountry == 'AE'}">🇦🇪 UAE</option>
-          <option value="GB" th:selected="${selectedCountry == 'GB'}">🇬🇧 United Kingdom</option>
-          <option value="US" th:selected="${selectedCountry == 'US'}">🇺🇸 United States</option>
-          <option value="VN" th:selected="${selectedCountry == 'VN'}">🇻🇳 Vietnam</option>
-        </select>
-
-        <button type="submit" class="search-btn btn">
-          <i class="bi bi-search me-1"></i>Search
-        </button>
-      </form>
-    </div>
-
-    <!-- ── Weather error ─────────────────────────────────────────── -->
-    <div th:if="${weatherError}" class="text-center py-5">
-      <i class="bi bi-exclamation-circle display-4 d-block mb-3 opacity-75"></i>
-      <p class="fs-5" th:text="${weatherError}"></p>
-    </div>
-
-    <!-- ── Main weather card ─────────────────────────────────────── -->
-    <div th:if="${weather}" class="weather-card p-4 p-md-5 mx-auto mb-5" style="max-width:560px;">
-
-      <!-- City, region & country -->
-      <div class="text-center mb-3">
-        <h2 class="fw-bold mb-0">
-          <i class="bi bi-geo-alt-fill me-1 opacity-75"></i>
-          <span th:text="${weather.cityName}"></span>
-        </h2>
-        <p class="opacity-75 mb-0">
-          <span th:if="${weather.region != null and !weather.region.isEmpty()}"
-                th:text="${weather.region} + ', '"></span>
-          <span th:text="${weather.country}"></span>
-        </p>
-      </div>
-
-      <!-- Icon + temperature -->
-      <div class="text-center my-4">
-        <div class="weather-icon mb-2">
-          <i th:class="'bi ' + ${weather.icon}"></i>
-        </div>
-        <div class="temp-display" th:text="${weather.temperature} + '°C'"></div>
-        <p class="fs-4 mt-1 opacity-90" th:text="${weather.condition}"></p>
-      </div>
-
-      <!-- Stats row -->
-      <div class="d-flex justify-content-center gap-4 mb-4 flex-wrap">
-        <div class="text-center">
-          <div class="opacity-75 small mb-1"><i class="bi bi-wind me-1"></i>Wind</div>
-          <div class="fw-semibold" th:text="${weather.windSpeed} + ' km/h'"></div>
-        </div>
-        <div class="text-center">
-          <div class="opacity-75 small mb-1"><i class="bi bi-droplet-fill me-1"></i>Humidity</div>
-          <div class="fw-semibold" th:text="${weather.humidity} + '%'"></div>
-        </div>
-        <div class="text-center">
-          <div class="opacity-75 small mb-1"><i class="bi bi-broadcast-pin me-1"></i>Code</div>
-          <div class="fw-semibold" th:text="'WMO ' + ${weather.weatherCode}"></div>
-        </div>
-      </div>
-
-      <!-- Save to favourites (only when logged in) -->
-      <div sec:authorize="isAuthenticated()" class="text-center">
-        <form th:action="@{/cities/save}" method="post" class="d-inline">
-          <input type="hidden" name="cityName"  th:value="${weather.cityName}"/>
-          <input type="hidden" name="country"   th:value="${weather.country}"/>
-          <input type="hidden" name="latitude"  th:value="${weather.latitude}"/>
-          <input type="hidden" name="longitude" th:value="${weather.longitude}"/>
-          <button type="submit" class="search-btn btn">
-            <i class="bi bi-star-fill me-2"></i>Save to Favourites
-          </button>
+    <!-- Search card -->
+    <div class="search-zone">
+      <div class="search-card">
+        <form class="search-row" action="/" method="get">
+          <input class="search-input" type="text" name="city"
+                 placeholder="Search any city..."
+                 th:value="${weather.cityName()}"
+                 autocomplete="off" required/>
+          <select id="countryCode" name="countryCode">
+            <option value="">Any country</option>
+            <option value="AU" th:selected="${selectedCountry=='AU'}">🇦🇺 Australia</option>
+            <option value="AT" th:selected="${selectedCountry=='AT'}">🇦🇹 Austria</option>
+            <option value="BD" th:selected="${selectedCountry=='BD'}">🇧🇩 Bangladesh</option>
+            <option value="BE" th:selected="${selectedCountry=='BE'}">🇧🇪 Belgium</option>
+            <option value="BR" th:selected="${selectedCountry=='BR'}">🇧🇷 Brazil</option>
+            <option value="CA" th:selected="${selectedCountry=='CA'}">🇨🇦 Canada</option>
+            <option value="CL" th:selected="${selectedCountry=='CL'}">🇨🇱 Chile</option>
+            <option value="CN" th:selected="${selectedCountry=='CN'}">🇨🇳 China</option>
+            <option value="CO" th:selected="${selectedCountry=='CO'}">🇨🇴 Colombia</option>
+            <option value="HR" th:selected="${selectedCountry=='HR'}">🇭🇷 Croatia</option>
+            <option value="CZ" th:selected="${selectedCountry=='CZ'}">🇨🇿 Czech Republic</option>
+            <option value="DK" th:selected="${selectedCountry=='DK'}">🇩🇰 Denmark</option>
+            <option value="EG" th:selected="${selectedCountry=='EG'}">🇪🇬 Egypt</option>
+            <option value="FI" th:selected="${selectedCountry=='FI'}">🇫🇮 Finland</option>
+            <option value="FR" th:selected="${selectedCountry=='FR'}">🇫🇷 France</option>
+            <option value="DE" th:selected="${selectedCountry=='DE'}">🇩🇪 Germany</option>
+            <option value="GH" th:selected="${selectedCountry=='GH'}">🇬🇭 Ghana</option>
+            <option value="GR" th:selected="${selectedCountry=='GR'}">🇬🇷 Greece</option>
+            <option value="HU" th:selected="${selectedCountry=='HU'}">🇭🇺 Hungary</option>
+            <option value="IN" th:selected="${selectedCountry=='IN'}">🇮🇳 India</option>
+            <option value="ID" th:selected="${selectedCountry=='ID'}">🇮🇩 Indonesia</option>
+            <option value="IE" th:selected="${selectedCountry=='IE'}">🇮🇪 Ireland</option>
+            <option value="IL" th:selected="${selectedCountry=='IL'}">🇮🇱 Israel</option>
+            <option value="IT" th:selected="${selectedCountry=='IT'}">🇮🇹 Italy</option>
+            <option value="JP" th:selected="${selectedCountry=='JP'}">🇯🇵 Japan</option>
+            <option value="KE" th:selected="${selectedCountry=='KE'}">🇰🇪 Kenya</option>
+            <option value="MY" th:selected="${selectedCountry=='MY'}">🇲🇾 Malaysia</option>
+            <option value="MX" th:selected="${selectedCountry=='MX'}">🇲🇽 Mexico</option>
+            <option value="MA" th:selected="${selectedCountry=='MA'}">🇲🇦 Morocco</option>
+            <option value="NL" th:selected="${selectedCountry=='NL'}">🇳🇱 Netherlands</option>
+            <option value="NZ" th:selected="${selectedCountry=='NZ'}">🇳🇿 New Zealand</option>
+            <option value="NG" th:selected="${selectedCountry=='NG'}">🇳🇬 Nigeria</option>
+            <option value="NO" th:selected="${selectedCountry=='NO'}">🇳🇴 Norway</option>
+            <option value="PK" th:selected="${selectedCountry=='PK'}">🇵🇰 Pakistan</option>
+            <option value="PE" th:selected="${selectedCountry=='PE'}">🇵🇪 Peru</option>
+            <option value="PH" th:selected="${selectedCountry=='PH'}">🇵🇭 Philippines</option>
+            <option value="PL" th:selected="${selectedCountry=='PL'}">🇵🇱 Poland</option>
+            <option value="PT" th:selected="${selectedCountry=='PT'}">🇵🇹 Portugal</option>
+            <option value="RO" th:selected="${selectedCountry=='RO'}">🇷🇴 Romania</option>
+            <option value="RU" th:selected="${selectedCountry=='RU'}">🇷🇺 Russia</option>
+            <option value="SA" th:selected="${selectedCountry=='SA'}">🇸🇦 Saudi Arabia</option>
+            <option value="SG" th:selected="${selectedCountry=='SG'}">🇸🇬 Singapore</option>
+            <option value="ZA" th:selected="${selectedCountry=='ZA'}">🇿🇦 South Africa</option>
+            <option value="KR" th:selected="${selectedCountry=='KR'}">🇰🇷 South Korea</option>
+            <option value="ES" th:selected="${selectedCountry=='ES'}">🇪🇸 Spain</option>
+            <option value="SE" th:selected="${selectedCountry=='SE'}">🇸🇪 Sweden</option>
+            <option value="CH" th:selected="${selectedCountry=='CH'}">🇨🇭 Switzerland</option>
+            <option value="TH" th:selected="${selectedCountry=='TH'}">🇹🇭 Thailand</option>
+            <option value="TR" th:selected="${selectedCountry=='TR'}">🇹🇷 Turkey</option>
+            <option value="UA" th:selected="${selectedCountry=='UA'}">🇺🇦 Ukraine</option>
+            <option value="AE" th:selected="${selectedCountry=='AE'}">🇦🇪 UAE</option>
+            <option value="GB" th:selected="${selectedCountry=='GB'}">🇬🇧 United Kingdom</option>
+            <option value="US" th:selected="${selectedCountry=='US'}">🇺🇸 United States</option>
+            <option value="VN" th:selected="${selectedCountry=='VN'}">🇻🇳 Vietnam</option>
+          </select>
+          <button class="search-btn" type="submit">Search</button>
         </form>
-      </div>
-
-      <!-- Prompt to login to save -->
-      <div sec:authorize="!isAuthenticated()" class="text-center opacity-75 small">
-        <i class="bi bi-lock me-1"></i>
-        <a href="/oauth2/authorization/github" class="link-light">Login with GitHub</a>
-        to save favourite cities
-      </div>
-
-    </div>
-
-    <!-- ── Saved cities ───────────────────────────────────────────── -->
-    <div sec:authorize="isAuthenticated()">
-
-      <h5 class="fw-semibold mb-3 text-center opacity-90">
-        <i class="bi bi-star-fill me-2"></i>My Favourite Cities
-      </h5>
-
-      <!-- No saved cities yet -->
-      <div th:if="${#lists.isEmpty(savedCities)}" class="text-center opacity-60 small pb-4">
-        No favourites yet — search for a city and save it.
-      </div>
-
-      <!-- City chips -->
-      <div th:unless="${#lists.isEmpty(savedCities)}"
-           class="d-flex flex-wrap justify-content-center gap-2 pb-4">
-
-        <div th:each="city : ${savedCities}"
-             class="city-chip d-flex align-items-center gap-2 px-3 py-2">
-
-          <!-- Click chip → search that city -->
-          <form th:action="@{/}" method="get" class="mb-0">
-            <input type="hidden" name="city" th:value="${city.cityName}"/>
-            <button type="submit" class="btn btn-link p-0 text-inherit fw-medium"
-                    style="color:inherit; text-decoration:none;">
-              <i class="bi bi-geo-alt me-1 opacity-75"></i>
-              <span th:text="${city.cityName}"></span>
-              <span class="opacity-60 small ms-1" th:text="'· ' + ${city.country}"></span>
-            </button>
-          </form>
-
-          <!-- Delete chip -->
-          <form th:action="@{/cities/delete/{id}(id=${city.id})}" method="post" class="mb-0">
-            <input type="hidden" name="currentCity" th:value="${weather != null ? weather.cityName : ''}"/>
-            <button type="submit" class="chip-delete" title="Remove"
-                    onclick="return confirm('Remove this city?')">
-              <i class="bi bi-x"></i>
-            </button>
-          </form>
-
+        <div class="quick-row">
+          <a class="quick-pill" href="/?city=London&countryCode=GB">London UK</a>
+          <a class="quick-pill" href="/?city=London&countryCode=CA">London CA</a>
+          <a class="quick-pill" href="/?city=New+York&countryCode=US">New York</a>
+          <a class="quick-pill" href="/?city=Tokyo&countryCode=JP">Tokyo</a>
+          <a class="quick-pill" href="/?city=Sydney&countryCode=AU">Sydney</a>
+          <a class="quick-pill" href="/?city=Kochi&countryCode=IN">Kochi</a>
+          <a class="quick-pill" href="/?city=Paris&countryCode=FR">Paris</a>
         </div>
       </div>
     </div>
 
-  </div><!-- /container -->
-</div><!-- /page-wrap -->
+    <!-- Current weather (centrepiece) -->
+    <div class="current-weather">
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+      <div th:if="${weatherError}" style="padding:12px 20px; background:rgba(255,100,80,0.18); border:1px solid rgba(255,100,80,0.3); border-radius:12px; font-size:.9rem; max-width:500px; text-align:center;">
+        <strong>⚠ </strong><span th:text="${weatherError}"></span>
+        <br/><small style="opacity:.7">Showing sample data</small>
+      </div>
+
+      <div class="weather-display">
+        <div class="main-icon weather-icon" th:classappend="' ' + ${weather.symbolClass()}" aria-hidden="true"></div>
+        <div class="temp" th:text="${weather.temperature()} + '°'"></div>
+      </div>
+
+      <h1 class="city-name" th:text="${weather.cityName()}"></h1>
+
+      <div class="city-meta">
+        <span class="region-country">
+          <span th:if="${!weather.region().isBlank()}" th:text="${weather.region()} + ' · '"></span>
+          <span th:text="${weather.country()}"></span>
+        </span>
+        <span class="condition-badge" th:text="${weather.condition()}"></span>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <span class="stat-label">Wind speed</span>
+        <span class="stat-value" th:text="${weather.windSpeed()}"></span>
+        <span class="stat-sub">km/h</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Humidity</span>
+        <span class="stat-value" th:text="${weather.humidity()} + '%'"></span>
+        <span class="stat-sub">air moisture</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Coordinates</span>
+        <span class="stat-value" style="font-size:1.1rem;"
+              th:text="${#numbers.formatDecimal(weather.latitude(),1,1)} + ', ' + ${#numbers.formatDecimal(weather.longitude(),1,1)}"></span>
+        <span class="stat-sub" th:text="'WMO code ' + ${weather.weatherCode()}"></span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Forecast zone ────────────────────────────────────────── -->
+  <div id="forecast" class="forecast-zone">
+
+    <!-- Hourly -->
+    <div>
+      <div class="forecast-heading">
+        <span class="section-eyebrow">Next 12 hours</span>
+        <h2 class="section-title">Hourly</h2>
+      </div>
+      <div class="forecast-panel">
+        <div class="hourly-scroll">
+          <div th:each="hour : ${weather.hourlyForecasts()}" class="hour-card">
+            <span class="hour-label"  th:text="${hour.label()}"></span>
+            <span class="weather-icon hour-symbol" th:classappend="' ' + ${hour.symbolClass()}"></span>
+            <span class="hour-temp"   th:text="${hour.temperature()} + '°'"></span>
+            <span class="hour-cond"   th:text="${hour.condition()}"></span>
+            <span class="hour-precip" th:text="${hour.precipitationProbability()} + '% rain'"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10-day -->
+    <div id="ten-day">
+      <div class="forecast-heading">
+        <span class="section-eyebrow">10-day outlook</span>
+        <h2 class="section-title">Daily Forecast</h2>
+      </div>
+      <div class="forecast-panel">
+
+        <!-- Selected day detail -->
+        <div th:if="${selectedDailyForecast != null}" class="selected-panel">
+          <div class="selected-panel-header">
+            <span class="selected-day-title"
+                  th:text="${selectedDailyForecast.dayLabel()} + ' · ' + ${selectedDailyForecast.dateLabel()}"></span>
+            <span class="weather-icon sel-symbol" th:classappend="' ' + ${selectedDailyForecast.symbolClass()}"></span>
+          </div>
+          <div class="selected-stat">
+            <span class="selected-stat-label">Condition</span>
+            <span class="selected-stat-value" th:text="${selectedDailyForecast.condition()}"></span>
+          </div>
+          <div class="selected-stat">
+            <span class="selected-stat-label">High / Low</span>
+            <span class="selected-stat-value"
+                  th:text="${selectedDailyForecast.highTemperature()} + '° / ' + ${selectedDailyForecast.lowTemperature()} + '°'"></span>
+          </div>
+          <div class="selected-stat">
+            <span class="selected-stat-label">Precipitation</span>
+            <span class="selected-stat-value" th:text="${selectedDailyForecast.precipitationProbability()} + '%'"></span>
+          </div>
+        </div>
+
+        <div class="day-grid">
+          <a th:each="day, s : ${weather.dailyForecasts()}"
+             class="day-card"
+             th:classappend="${selectedDayIndex == s.index} ? ' is-selected' : ''"
+             th:href="@{/(city=${weather.cityName()},countryCode=${selectedCountry},dayIndex=${s.index})+'#ten-day'}">
+            <div class="day-header">
+              <span class="day-name" th:text="${day.dayLabel()}"></span>
+              <span class="day-date" th:text="${day.dateLabel()}"></span>
+            </div>
+            <span class="weather-icon day-symbol" th:classappend="' ' + ${day.symbolClass()}"></span>
+            <div class="day-temps">
+              <span class="day-high" th:text="${day.highTemperature()} + '°'"></span>
+              <span class="day-low"  th:text="${day.lowTemperature()}  + '°'"></span>
+            </div>
+            <span class="day-cond"   th:text="${day.condition()}"></span>
+            <span class="day-precip" th:text="${day.precipitationProbability()} + '% rain'"></span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /forecast-zone -->
+</div><!-- /page-shell -->
+
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
-  new TomSelect('#countryCode', {
-    placeholder: '🌍 Any Country',
-    allowEmptyOption: true,
-    maxOptions: null,
-    highlight: true
-  });
+  new TomSelect('#countryCode', { placeholder: 'Any country', allowEmptyOption: true, maxOptions: null });
 </script>
 </body>
 </html>
